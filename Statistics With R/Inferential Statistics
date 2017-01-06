@@ -1,0 +1,204 @@
+---
+title: "Statistical inference with the GSS data"
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+
+## Setup
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+library(statsr)
+```
+
+### Load data
+ 
+
+```{r load-data}
+load("gss.Rdata")
+
+```
+
+
+
+* * *
+
+## Part 1: Data
+
+A study conclusion is generalizable to population only if the study uses random sampling. The target population of the GSS ( General Social Survey) is adults (18+) living in households in the United States. The GSS sample is drawn using an area probability design that randomly selects respondents in households across the United States to take part in the survey. GSS uses random sampling to collect data so survey conclusions are generalizable.
+
+GSS is an observational study and does not uses random assignments so study results can not be used to draw causal conclusions.
+
+* * *
+
+## Part 2: Research question
+
+Gun control issue has become a major debate in 2016 United States presidential election race. Democrats favor more gun control laws e.g. oppose the right to carry concealed weapons in public places. Republicans oppose gun control laws and are strong supporters of the Second Amendment (the right to bear arms) as well as the right to carry concealed weapons. Using our dataset we would like to answer the following research question.
+
+
+**Research quesion :**  Is gun ownership rate of republican supporters signifacantly diiferent than democrat supporters?
+
+
+* * *
+
+## Part 3: Exploratory data analysis
+
+For our research question we are interested in two fields of the dataset. One is **owngun**, which represents whether respondant have gun in home and **partyid** which represents political party affiliation. Lets find out unique values of these two fields.
+
+```{r unique field values}
+unique(gss$owngun)
+
+unique(gss$partyid)
+```
+
+For this analysis we will only take into account the records where partyid is not NA and respondant has not refused to answer gun ownership question.
+
+```{r filter data}
+filtered_data<-gss[,c("owngun","partyid")]%>%filter(is.na(owngun)==FALSE&owngun!="Refused"&is.na(partyid)==FALSE)
+filtered_data$owngun<-droplevels(filtered_data$owngun)      # drops the levels that do not occur
+```
+
+Let us take a look at summary of our filtered data.
+
+```{r data for analysis}
+summary(filtered_data)
+```
+
+Relative frequency table is useful to analyze data especially when information is grouped into categories.
+
+
+```{r relative frequency table}
+counts <- table(filtered_data$owngun, filtered_data$partyid,dnn=c("Have a gun","Party affiliation"))
+prop = prop.table(counts,margin=2)
+names(dimnames(prop)) <- list("","Table 1")
+prop
+```
+
+To visually understand the distribiution of data let us plot the standarized segmented bar plot.
+
+```{r barplot}
+par(xpd=NA,oma=c(3.5,1,0,8))
+barplot(prop, main="Standarized segmented bar plot of party affiliation", col=c("indianred3","lightskyblue4"),las=2,cex.names=.9
+   )
+
+legend(10,1,fill=c("indianred3","lightskyblue4"),
+    legend = c("Own gun","Do not own gun"))
+
+title(sub="Fig 1: Barplot of party affiliation categorized by gun ownership", line=7.5, cex.lab=1.2 )
+```
+
+From both the frequency table and barplot it looks like gun ownership is relatively high in republican supporters. We need to apply statistical inference to verify whether these difference statistically significant or simply due to chance.
+
+
+
+* * *
+
+## Part 4: Inference
+
+As we are only interested to test gun ownership ratio difference between democrat and republicans, we need to drop the two categories that neither represent democrat nor republican that is "Independent" and "other party". We are going to use a common label "Democrat" for three different types of democrat supporter (Strong Democrat, Not Strong Democrat, Independent Near Democart). Similarly  common label "Republican" is going to be used for different types of republican supporter.
+
+```{r data for inference}
+data_for_inference<-filtered_data%>%filter(partyid!="Independent"&partyid!="Other Party")
+data_for_inference<-data_for_inference %>%
+  mutate(partyname = ifelse(partyid == "Strong Democrat" | partyid == "Not Str Democrat"  | partyid == "Ind,Near Dem" , "Democrat",
+               ifelse(partyid == "Strong Republican" | partyid == "Not Str Republican"  | partyid == "Ind,Near Rep" , "Republican", NA)))
+
+```
+
+We do not need partyid column anymore so we are going to remove it.
+
+```{r drop partyid column}
+data_for_inference$partyid<-NULL
+```
+
+Following table informations will be required to apply our inferential framework.
+
+```{r proportion for hypothesis}
+
+
+counts<- table(data_for_inference$owngun, data_for_inference$partyname,dnn=c("Have a gun","Party affiliation"))
+names(dimnames(counts)) <- list("","Table 2")
+print(addmargins(counts))
+
+prop = prop.table(counts,margin=2)
+names(dimnames(prop)) <- list("","Table 3")
+prop
+```
+
+
+### Confidence Interval
+#### Check conditions
+If respondant reported to own a gun it will be treated as success otherwise failure. Successe proprotion of demcrat supporters is $\hat{p}_{dem} = 0.3746227$  and $\hat{p}_{rep} = 0.4893855$  in case of republican supporter. We will create a  90% confidence interval to estimate true population proportion difference in gun ownership. But to create confidence interval we need to apply normal distribiution model. We must check two conditions before applying the normal model to $\hat{p}_{rep} - \hat{p}_{dem}$.
+
+* First, the sampling distribution for each sample proportion must be nearly normal.
+
+* The two samples must be independent of each other. 
+
+Under these two conditions, the sampling distribution of $\hat{p}_{rep} - \hat{p}_{dem}$ may be well approximated using the normal model. 
+
+To verify whether each sample proportion follows nearly normal distribiution or not, we check success-failure condition  which demands to see at least 10 successes and 10 failures in our sample, i.e.
+$n * p \ge 10 ~and~ n * (1 - p) \ge 10$. From Table 2 and table 3 we can set following values $n_{dem} = 16897,  \hat{p}_{dem} = 0.3746227 ,  n_{rep} = 11635,  \hat{p}_{rep} = 0.4893855$
+
+Now we can check success-failure condition for both democrat and republican group. For democrats $n_{dem} * \hat{p}_{dem}=6329.999$ and $n_{dem} * (1 - \hat{p}_{dem})=10567$, both of them are greater than 10. For republicans $n_{rep} * \hat{p}_{rep}= 5694$ and $n_{rep} * (1 - \hat{p}_{rep})=5940.999$, both of them are greater than 10. So we can safely say that sampling distribiution for each sample proportion is nearly normal.
+
+Sample size of democrats is 16897 and sample size of republicans is 11635. As we know if data come from a simple random sample and consist of less than 10% of the population, then the independence assumption is reasonable. Surely our sample size for democrats and republicans are less than 10% of the true population size of democrat and republican supporters. So we can claim that our two sample groups are independent of each other.
+
+Because each group comes from a simple random sample and is less than 10% of the population, the observations are independent. As our sample data fullfils success-failure condition we can use normal model to construct confidence interval.
+
+#### Point estimate and Margin of Error
+Difference of success proportion between republicant  and democrats is $\hat{p}_{rep} - \hat{p}_{dem} = 0.1147628$ which we will use as our **point estimate**.  For a 90% confidence interval, z* = 1.65. The standard error of the difference in sample proportions is calculated in the following way. 
+
+$$\large \begin{split} SE_{\hat{p}_{rep} - \hat{p}_{dem}} & = \sqrt{SE_{\hat{p}_{rep}}^2+SE_{\hat{p}_{dem}}^2} \\
+                                            & = \sqrt{\frac{\hat{p}_{rep}* (1-                               \hat{p}_{rep})}{n_{rep}}+\frac{\hat{p}_{dem} *(1- \hat{p}_{dem})}{n_{dem}}}\end{split}$$
+
+By placing the variable values we obtain standard error  $\large \begin{split} SE_{\hat{p}_{rep} - \hat{p}_{dem}} = 0.00594494827 \end{split}$. Margin of error is calculated in the following way $$\large\begin{split}  ME &= z^* * SE_{\hat{p}_{rep} - \hat{p}_{dem}} &= 1.65*0.00594494827&= 0.00980916464 \end{split}$$
+
+#### Construct confidence interval
+As we know both the point estimate and margin of error we can construct our 90% confidence interval in the following way.
+
+$point\; estimate \pm ME \rightarrow 0.1147628 \pm 0.00980916464 \rightarrow (0.10495363536,0.12457196464)$ 
+
+So we are 90% confident that true population proportion difference of gun ownership between republican and democrat supporters is in interval (0.10495363536,0.12457196464).
+
+### Hypothesis testing
+
+In our sample data proportion of gun ownership is higher in republicans than democrats but is sample data convincing enough to claim a association between party affiliation and gun ownership or higher rate of gun ownership in republicans is simply due to chance? Here we present our hypothesis framework.
+
+
+$H_0$: The gun ownership rate for republicans is the same as the democrats, $\hat{p}_{rep} = \hat{p}_{dem}$  
+$H_A$: The gun ownership rate for republicans is higher than the democrats, $\hat{p}_{rep} > \hat{p}_{dem}$  
+
+#### Check conditions
+
+We will check the conditions for using the normal model to analyze the results of the study. The details are very similar to that of confidence intervals. However, this time we use a special proportion called the pooled proportion to check the success-failure condition:
+
+$$ \begin{split}pooled\;proportion, \hat{p} & = \frac{\#\;of\;respondant\;own\;a\;gun}{\#\;of\;total\; respondant} &= \frac{12024}{28532}&=0.42142\end{split}$$
+
+This proportion is an estimate of the gun ownership rate across the entire study, and
+it’s our best estimate of the proportions for $\hat p_{rep}$ and $\hat p_{dem}$, if the null hypothesis is true that is $\hat p_{rep} =\hat p_{dem}$
+
+Now we test success failure condition using pooled proportion.
+
+$\hat p * n_{rep} = 0.42142 * 11635 = 4903.2217\quad$ 
+$(1-\hat p) * n_{rep} = 0.57858 * 11635 = 6731.7783$
+$\hat p * n_{dem} = 0.42142 * 16897 = 7120.73374\quad$
+$(1-\hat p) * n_{dem} = 0.57858 * 16897 = 9776.26626$
+
+
+The success-failure condition is satisfied since all values are at least 10 and independence is also ensured as sample size is less than 10%. So we can safely apply the normal model.
+
+#### Calculate Standard Error
+
+Next, the standard error is calculated using the pooled proportion.
+
+$$\large\begin{split}SE &= \sqrt{\frac{\hat p * (1-\hat p)}{n_{rep}} + \frac{\hat p * (1-\hat p)}{n_{dem}} } &=  \sqrt{\frac{0.42142 * 0.57858}{11635}  + \frac{0.42142 * 0.57858}{16897}}&=0.00594863513 \end{split}$$
+
+#### Test Hypothesis
+
+

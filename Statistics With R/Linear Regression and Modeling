@@ -1,0 +1,187 @@
+---
+title: "Modeling and prediction for movies"
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+
+## Setup
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+#install.packages("psych")
+library(psych)
+library(ggplot2)
+library(dplyr)
+library(statsr)
+
+```
+
+### Load data
+```{r load-data}
+load("movies.Rdata")
+```
+* * *
+
+## Part 1: Data
+
+A study conclusion is generalizable to population only if the study uses random sampling. The data set that we are using is comprised of 651 randomly sampled movies produced and released before 2016. IMDB and Rotten Tomatoes, two popular movie review websites were used to collect sample data. As random sampling was used to collect data so survey conclusions are generalizable for all movies.
+
+Data collection technique does not uses random assignments so study results can not be used to draw causal conclusions.
+
+
+* * *
+
+## Part 2: Research question
+
+ IMDB and Rotten Tomatoes are popular movie review websites where both critics and audiences give their ratings. Often a movie gets high ratings but is created by director, actor, actresses who have never won any award in oscar. We are interested to answer the follwing research question that addresses relationship between winning oscar award and rating in movie review website.
+
+**Research quesion :**  If a movie win award in oscar or is created by oscar award winning director/actor/actress, is it tend to have higher ratings in movie review websites?
+
+* * *
+
+## Part 3: Exploratory data analysis
+
+
+We will create a new variable **score** from the following variables that will indicate popularity of a movie in movie review websites.
+
+**imdb_rating**: Rating on IMDB
+
+**critics_score**: Critics score on Rotten Tomatoes
+
+**audience_score**: Audience score on Rotten Tomatoes 
+
+
+imdb rating is scored from 1-10 and rest of the two variables are scored from 1-100. We will use the following formula to calculate score.
+
+$$ score= (imdb\_rating*10 + critics\_score+audience\_score)/3$$
+
+We will use **score** as our only response variable.
+```{r  score, message = FALSE}
+score<-(movies$imdb_rating*10+movies$audience_score+movies$critics_score)/3
+movies['score']<-score
+```
+
+Let us take a look at the  distribiution of score of variable.
+
+```{r  score distribiution, message = FALSE}
+par(xpd=TRUE)
+h<-hist(movies$score, breaks=20, col="green", xlab="Movie Rating", 
+  	main="Histogram with Normal Curve",sub="Fig 1: Movie rating frequency barplot")
+xfit<-seq(min(movies$score),max(movies$score))
+yfit<-dnorm(xfit,mean=mean(movies$score),sd=sd(movies$score))
+yfit <- yfit*diff(h$mids[1:2])*length(movies$score) 
+lines(xfit, yfit, col="blue", lwd=2)
+
+```
+
+
+The distribiution of score look slightly left skewed. We can get more information from the summary statistics.
+
+```{r  score summary, message = FALSE}
+describe(movies$score)
+```
+
+Keeping in my mind that distribiution is slightly left skewed, as mean is 61.66 and standard deviation is 18.24,  from 68–95–99.7 rule we can expect 68% movies get rating from 43.42 and 79.9.
+
+* * *
+
+## Part 4: Modeling
+Let us take a look at the column names of movies dataframe so that we can get a idea about the dataset.
+```{r lcolumn names, message = FALSE}
+colnames(movies)
+```
+
+As we want to predict rating of movie based on winning awards in Oscar we include the following explanatory variables from the dataset.
+
+####Explanatory variables:
+
+Our full model dataset will consist of the following variables as we are interested to find assosiation between movie rating and winning award in oscar.
+
+**best_pic_win**: Whether or not the movie won a best picture Oscar (no, yes)
+
+**best_actor_win**: Whether or not one of the main actors in the movie ever won an Oscar (no, yes) - note that this is not necessarily whether the actor won an Oscar for their role in the given movie
+
+**best_actress_win**: Whether or not one of the main actresses in the movie ever won an Oscar (no, yes) - note that this is not necessarily whether the actresses won an Oscar for their role in the given movie
+
+**best_dir_win**:Whether or not the director of the movie ever won an Oscar (no, yes) - note that this is not necessarily whether the director won an Oscar for the given movie.
+
+
+
+
+####Model selection:
+
+When the sole goal is to improve prediction accuracy, adjusted $R^2$ technique is used. When we care about understanding which variables are statistically significant predictors of the response, or if there is interest in producing a simpler model at the potential cost of a little prediction accuracy, then the p-value approach is preferred. We are interested to find out which variables affect the response variable most, so we are going to use p value approach with backward elimination technique  to answer our research question.
+
+####p value approach with backward elimintation:
+
+In p value approach with backward elimintation we start with the full model and at every step eliminate the variable whose p value is greater than significance level. We will consider 0.05(95% confidence interval) as significance level.
+
+```{r full_model, message = FALSE}
+full_model<-lm(score~best_pic_win + best_actor_win +best_actress_win+best_dir_win ,data = movies)
+summary(full_model)
+```
+
+As variable best\_actor\_win has p value greater than 0.05 we will discard this variable from the model.
+
+```{r model_1, message = FALSE}
+model<-lm(score~best_pic_win+best_actress_win+best_dir_win ,data = movies)
+summary(model)
+```
+
+As variable best_actress_win has p value greater than 0.05 we will discard this variable from the model.
+
+```{r model_2, message = FALSE}
+model<-lm(score~best_pic_win+best_dir_win ,data = movies)
+summary(model)
+```
+
+As none of the variable's p value is greater than significance level 0.05, we can not discard any more variables. So our final model consist of variables best\_pic\_win, best\_dir\_win.
+
+####Model analysis:
+
+We can predecit score variable from best\_pic\_win and best\_dir\_win variable in the following way
+
+$$score= \beta_0+\beta_1 * best\_pic\_win + \beta_2 * best\_dir\_win $$
+
+$\beta_0,\beta_1,\beta_2$ are respectively estimates of intercept, best\_pic\_win, best\_dir\_win. Let us analyse the summary report and explain what does the co efficients $\beta_0,\beta_1,\beta_2$ mean.
+
+If we take a closer look at summary report we can see there is a yes after best\_pic\_win and best\_dir\_win variable. That yes represent non reference lebel. That means we will consider no as reference lebel. best\_pic\_win and best\_dir\_win variable takes value 0 when a movie has not won best picture award at Oscar and the director of the movie never won an Oscar respectively, 1 otherwise. $\beta_0$ is estimate of intercept that takes value 60.994. That means if a movie has not won best pic award in oscar and director of the movie has not ever won award in oscar, estimated score of the movie will be 60.994. $\beta_1$  is the average increase in score if picture has won best pic award in oscar holding the other variables constant. The point estimate is $\beta_1$ = 17.850. $\beta_2$  is the average increase in score if director of the picture has ever won in oscar holding the other variables constant. The point estimate is $\beta_2$ = 7.182. 
+
+
+
+* * *
+
+## Part 5: Prediction
+
+
+We are going to pick "The Girl on the Train" movie released in 2016 and predict score of this movie using our model. Director of the movie Tate Taylor has never won oscar award before though his movie "The Help" released in 2011 was nominated for oscar(source:wikipedia). As of today's date we do not know whether "The Girl on the Train"" is going to win oscar or not, we are going to consider both the cases to predict the score. We are going to assume Tate tailor is not going to win oscar for this movie.
+
+If the movie is going to win oscar we can predict the score in following way.
+
+```{r prediction, message = FALSE}
+The_Girl_on_the_Train <- data.frame(best_pic_win = "yes", best_dir_win = "no")
+predict(model,The_Girl_on_the_Train)
+predict(model,The_Girl_on_the_Train,interval = "prediction", level = 0.95)
+```
+Using our model predicted score of the movie is 78.84421.Hence, the model predicts, with 95% confidence, that the movie "The Girl on the Train" is expected to have an evaluation score between 40.67194 and 117.0165 if it wins best picture award in oscar given that director Tate Taylor has neither win best director award before and  nor is going to win for this movie.
+
+If the movie is not going to win oscar we can predict the score in following way.
+
+```{r prediction2, message = FALSE}
+The_Girl_on_the_Train <- data.frame(best_pic_win = "no", best_dir_win = "no")
+predict(model,The_Girl_on_the_Train)
+predict(model,The_Girl_on_the_Train,interval = "prediction", level = 0.95)
+```
+
+Using our model predicted score of the movie is 60.99422. Hence, the model predicts, with 95% confidence, that the movie "The Girl on the Train" is expected to have an evaluation score between 25.57516 and 96.41327 if it does not win best picture award in oscar given that director Tate Taylor has neither win best director award before and is nor is going to win for this movie.
+
+
+* * *
+
+## Part 6: Conclusion
+
+Adjusted R-squared value of our final model is only 0.02335 which indicates that our model is not that strong enough predicting scores. Though it is not a strong model low p value (0.0001745) indicates that variables used in the model as a whole is significat. Other variables like genre, runtime ,  MPAA rating of the movie could have helped us to predict score more accurately but as these variables are out of scope of the research question we did not include them in our full model.

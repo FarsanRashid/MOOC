@@ -1,0 +1,222 @@
+---
+title: "Exploring the BRFSS data"
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+
+## Setup
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+```
+
+### Load data
+
+```{r load-data}
+load("brfss2013.RData")
+```
+
+
+
+* * *
+
+## Part 1: Data
+A study conclusion is generalizable to population only if the study uses random sampling. In order to conduct the BRFSS(Behavioral Risk Factor Surveillance System), states obtain samples of telephone numbers from CDC(Centers for Disease Control and Prevention). Random Digit Dialing (RDD) techniques is used to obtain landlines and cell phone numbers. BRFSS uses random sampling to collect data so survey conclusions are generalizable.
+
+BRFSS is an observational study and does not uses random assignments so study results can not be used to draw causal conclusions.
+
+* * *
+
+## Part 2: Research questions
+
+**Research quesion 1:** How sleep duration is related with general health?
+
+**Research quesion 2:** How cholesterol is related with heart disease? 
+
+**Research quesion 3:** How mental health is related with gender?
+
+
+* * *
+
+## Part 3: Exploratory data analysis
+
+**Research quesion 1:**
+  For our research question 1 we are interested in two fields of the dataset. One is *genhlth* which represents General Health and *sleptim1* which is On average, how many hours of sleep do one get in a 24-hour period. Lets find out unique values of these two fields.
+
+```{r unique field values}
+unique(brfss2013$genhlth)
+
+unique(brfss2013$sleptim1)
+```
+
+*genhlth* field has some missing values which is represented by NA and *sleptim1* has some extreme values like 1,2,19,20 etc and also has some invalid entry like 103,450. We want to filter dataset so that there are no missing values. We also discard records where sleep time is greater than 21 or less than 1 as these values are either extremely rare or invalid. We take a sample of size 10000 from filtered dataset.
+
+
+```{r clean dataset and plot }
+#Filter dataset
+filtered_data<-brfss2013[,c("genhlth","sleptim1")]%>%filter(sleptim1>0&sleptim1<22&is.na(genhlth)==FALSE)
+
+sample_data<-sample_n(filtered_data,10000,replace = FALSE)
+ 
+counts <- table(sample_data$genhlth, sample_data$sleptim1)
+
+
+barplot(counts, main="Segmented Bar plot for Sleep hours", sub="Fig 1.1: Segmented bar plot for sleep hours where the
+counts have been further broken down by general health",
+   col=c("darkblue","red","green","yellow","grey"),
+ 	legend = rownames(counts))
+
+title(ylab="count", line=2, cex.lab=1.2)
+title(xlab="Hours of sleep", line=2, cex.lab=1.2 )
+
+```
+
+From Fig 1.1 distribiution of sleep duration looks like a normal curve. So we can expect mean and median of sleep hours to be very close. Let's take a look at summary statistics of sleep duration.
+
+```{r summary statistics}
+sample_data%>%summarise(mean_st = mean(sleptim1), sd_st = sd(sleptim1), iqr_st= IQR(sleptim1), median_st=median(sleptim1), n = n())
+```
+
+Close value of mean and median support our assumption. From summary statistics we see standard deviation is around 1.44 and mean is nearly 7.06 so from 68–95–99 rule 68% people sleeps around from 8.5 to 5.62 hours. 
+
+Standarized bar plot of figure 1.1 would help us to understand relationship between sleep hour and general health.
+```{r plot}
+plot.new()
+
+prop = prop.table(counts,margin=2)
+
+par(oma=c(0,1,0,8),xpd=NA)
+barplot(prop, col=c("darkblue","red","green","yellow","grey"))
+
+title(main="Standardized Segmented Bar plot for Sleep hours", line=2, cex.lab=1.2 )
+title(sub="Fig 1.2: Standardized version
+of Figure 1.1", line=3, cex.lab=1.2 )
+par(oma=c(0,0,0,7),xpd=NA)
+
+legend(20,1,legend=rownames(counts),fill=c("darkblue","red","green","yellow","grey"))
+
+```
+
+From figure 1.2 it looks like sleep duration of people with poor health is generally from 1-4 hours. In most cases people who reported to have excellent health sleeps around 6-9 hours. Most people from sleep duration 6 to 9 looks healthy.
+
+**Research quesion 2:**
+According to medical science high blood cholesterol causes vaious heart diseases. In this research question we want to verify this claim on our dataset. To answer our research question we are interested in two fields of the dataset, one is *cvdcrhd4* which gives us information whether respondent ever diagnosed with angina or coronary heart disease. Another field is *toldhi2* that represents if respondent was diagnosed with high blood cholesterol. Both variables are categorical variables. Let's  take a look at the unique values of theses variables.
+
+```{r}
+unique(brfss2013$cvdcrhd4)
+unique(brfss2013$toldhi2)
+
+```
+We only take into consideration the records where both high blood cholestorol and heart disease column is not NA. Our sample size will be 10000.
+
+```{r}
+filtered_data<-brfss2013[,c("cvdcrhd4","toldhi2")]%>%filter(is.na(cvdcrhd4)==FALSE&is.na(toldhi2)==FALSE)
+
+sample_data<-sample_n(filtered_data,10000,replace = FALSE)
+
+```
+
+Standarized segmented barplot would help us to answer the research question.
+
+```{r}
+counts <- table(sample_data$toldhi2, sample_data$cvdcrhd4,dnn=c("High blood pressure","Diagnosed with heart disease"))
+#View(counts)
+prop = prop.table(counts,margin=2)
+
+par(xpd=NA,oma=c(0,1,0,8))
+barplot(prop, main="Standarized Segmented Bar plot of high 
+blood cholesterol", sub="Fig 2.1: Segmented bar plot for high 
+blood cholesterol where counts are broken down by general health",col=c("red","green")
+   )
+
+legend(2.5,1,fill=c("red","green"),
+ 	legend = c("Heart disease","No heart disease"))
+
+title(xlab="High Blood Cholesterol", line=2, cex.lab=1 )
+
+```
+
+From figure 2.1 it looks like if some one is diagnosed with high blood cholestorol chance of being a heart increases dramatically. We can numerically analyze research question 2 from relative frequency table
+
+```{r}
+prop
+```
+
+From relative frequency table we see that if someone is diagnosed with high blood cholestorol probability of having a heart disease is around 71% which is preety high. So we can say that there is a positive correlation between high blood cholestorol and heart disease.
+
+
+**Research quesion 3:**
+
+It is often said that female are more emotional than male. In our research question 3 we would like to investigate how mental health of respondants in last 30 days differ from male to female. For this researh question we are interested in two fields of brfss2013 dataset. One is *sex* which represents gender of the respondant and another is *menthlth* which represents number of days mental health not good during the past 30 days. Let's check unique values of these two fields.
+
+```{r}
+unique(brfss2013$sex)
+unique(brfss2013$menthlth)
+```
+
+There are some missing values in sex field represented by NA. In menhlth there is some missing values represented by NA and some invalid values greater than 30. We filter our dataset so that there is o missing values in either field and no values greater than 30 in menhlth field. We will take a sample of size 10000.
+
+
+```{r}
+filtered_data<-brfss2013[,c("sex","menthlth")]%>%filter(is.na(sex)==FALSE&is.na(menthlth)==FALSE)
+
+sample_data<-sample_n(filtered_data,10000,replace = FALSE)
+
+```
+
+Let's find out the distribiution of number of days mental health was not good in last 30 days.
+
+
+```{r}
+counts <- table(sample_data$sex, sample_data$menthlth)
+
+
+barplot(counts, main="Segmented Bar plot for mental health", sub="Fig 3.1: Segmented bar plot for mental health where the
+counts have been further broken down by gender",
+   col=c("darkblue","red"),
+ 	legend = rownames(counts))
+
+title(ylab="count", line=2, cex.lab=1.2)
+title(xlab="No of days mental health was bad", line=2, cex.lab=1.2 )
+```
+
+Fig 3.1 is a right skewed graph. A standarized bar plot would give us a better understanding of relationship between gender and mental health. 
+
+```{r}
+
+plot.new()
+
+prop = prop.table(counts,margin=2)
+
+par(oma=c(0,1,0,8),xpd=NA)
+barplot(prop, col=c("darkblue","red"))
+
+legend(40,1,fill=c("darkblue","red"),
+ 	legend = c("Male","Female"))
+
+title(xlab="No of days mental health was bad", line=2.5, cex.lab=1.2 )
+
+title(main="Standardized Segmented Bar plot 
+      for no of days mental health was bad", line=2, cex.lab=1.2 )
+title(sub="Fig 3.2: Standardized version of Figure 3.1", line=4, cex.lab=1.2 )
+
+
+```
+From figure 3.1 we see that distribiution is right skewed and most of sample come from day range [0 - 8] . From figure 3.2 we see that in day range [0 - 8] proportion of female repondants are
+higher than male respondants. Let's analysise the sample numerically from day range [0-8] as most of the respondants are from this day range according to figure 3.1.
+
+```{r}
+sample_data_0_8<-sample_data%>%filter(menthlth<9)
+counts_0_8 <- table(sample_data_0_8$sex, sample_data_0_8$menthlth)
+counts_0_8
+prop = prop.table(counts_0_8,margin=2)
+prop
+```
+
+From the above statistics we see that if we consider only day range [0-8] from where almost all the sample data come from it is clear that females had more days in whcih mental health was bad comparaed to male respondants.
