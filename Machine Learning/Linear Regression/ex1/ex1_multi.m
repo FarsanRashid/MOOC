@@ -88,10 +88,25 @@ num_iters = 400;
 % Init Theta and Run Gradient Descent 
 theta = zeros(3, 1);
 [theta, J_history] = gradientDescentMulti(X, y, theta, alpha, num_iters);
-
+%{ 
+Commented portion for different learning rate
+theta = zeros(3, 1);
+[theta, J_history_2] = gradientDescentMulti(X, y, theta, .03, num_iters);
+theta = zeros(3, 1);
+[theta, J_history_3] = gradientDescentMulti(X, y, theta, .1, num_iters);
+theta = zeros(3, 1);
+[theta, J_history_4] = gradientDescentMulti(X, y, theta, .3, num_iters);
+%}
 % Plot the convergence graph
 figure;
 plot(1:numel(J_history), J_history, '-b', 'LineWidth', 2);
+%{ 
+Commented portion for different learning rate plot
+hold on;
+plot(1:numel(J_history_2), J_history_2, 'r','LineWidth', 2);
+plot(1:numel(J_history_3), J_history_3, 'k','LineWidth', 2);
+plot(1:numel(J_history_4), J_history_4, 'g','LineWidth', 2);
+%}
 xlabel('Number of iterations');
 ylabel('Cost J');
 
