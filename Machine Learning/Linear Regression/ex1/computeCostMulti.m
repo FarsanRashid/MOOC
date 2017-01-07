@@ -13,7 +13,15 @@ J = 0;
 % Instructions: Compute the cost of a particular choice of theta
 %               You should set J to the cost.
 
+predicted_values = X * theta
 
+difference  = predicted_values - y
+
+difference_squared  = difference.^2
+
+J = sum(difference_squared)
+J = J/2
+J = J/m
 
 
 
