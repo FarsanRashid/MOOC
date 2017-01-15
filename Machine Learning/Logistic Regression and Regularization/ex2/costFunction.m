@@ -9,6 +9,16 @@ m = length(y); % number of training examples
 
 % You need to return the following variables correctly 
 J = 0;
+
+for index = 1:m
+   y_i = y(index)
+   x_i = X(index,:)
+   h_theta_i = sigmoid(x_i * theta)
+   J = J +  ( -y_i * log(h_theta_i) - (1-y_i) * log(1-h_theta_i ) )
+end
+
+J = J/m
+
 grad = zeros(size(theta));
 
 % ====================== YOUR CODE HERE ======================
