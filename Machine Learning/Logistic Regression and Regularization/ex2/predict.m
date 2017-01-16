@@ -14,13 +14,15 @@ p = zeros(m, 1);
 %               your learned logistic regression parameters. 
 %               You should set p to a vector of 0's and 1's
 %
-
-
-
-
-
-
-
+for index = 1:m
+   x_i = X(index,:)
+   h_theta_i = sigmoid(x_i * theta)
+   if(h_theta_i<.5)
+       p(index) = 0
+   else
+       p(index) = 1
+   end
+end
 % =========================================================================
 
 
