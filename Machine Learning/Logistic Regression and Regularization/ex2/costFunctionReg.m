@@ -20,9 +20,11 @@ end
 
 J = J/m
 
-total = sum(theta(index).^2)
+total = sum(theta.^2)
 
-J = J + (lambda/(2*m)) * 
+total = total - theta(1)^2 %We do not regularize theta_zero
+
+J = J + (lambda/(2*m)) * total
 
 % ====================== YOUR CODE HERE ======================
 % Instructions: Compute the cost of a particular choice of theta.
@@ -31,9 +33,26 @@ J = J + (lambda/(2*m)) *
 %               derivatives of the cost w.r.t. each parameter in theta
 
 
+total = 0
+for index = 1:m
+   y_i = y(index)
+   x_i = X(index,:)
+   h_theta_i = sigmoid(x_i * theta)
+   total = total +  (h_theta_i - y_i) * X(index,1)
+end
+grad(1) = total / m
 
-
-
+for theta_index = 2:size(theta)
+    total = 0
+    for index = 1:m
+        y_i = y(index)
+        x_i = X(index,:)
+        h_theta_i = sigmoid(x_i * theta)
+        total = total +  (h_theta_i - y_i) * X(index,theta_index)
+    end
+    total = total/m
+    grad(theta_index) = total + (lambda/m) * theta(theta_index)
+end
 
 % =============================================================
 
