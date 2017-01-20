@@ -17,18 +17,18 @@ p = zeros(size(X, 1), 1);
 % Add ones to the X data matrix
 X = [ones(m, 1) X];
 
-probability = X*transpose(all_theta)
+probability = X*transpose(all_theta);
 
 for index = 1 : m
-    mx = 0
-    label = -1
+    mx = 0;
+    label = -1;
     for i = 1:num_labels
         if probability(index,i)>mx
-            mx = probability(index,i)
-            label = i
+            mx = probability(index,i);
+            label = i;
         end 
     end
-    p(index) = label
+    p(index) = label;
 end
 
 % ====================== YOUR CODE HERE ======================
