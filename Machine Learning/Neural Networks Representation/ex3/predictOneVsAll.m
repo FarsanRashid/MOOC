@@ -17,6 +17,20 @@ p = zeros(size(X, 1), 1);
 % Add ones to the X data matrix
 X = [ones(m, 1) X];
 
+probability = X*transpose(all_theta)
+
+for index = 1 : m
+    mx = 0
+    label = -1
+    for i = 1:num_labels
+        if probability(index,i)>mx
+            mx = probability(index,i)
+            label = i
+        end 
+    end
+    p(index) = label
+end
+
 % ====================== YOUR CODE HERE ======================
 % Instructions: Complete the following code to make predictions using
 %               your learned logistic regression parameters (one-vs-all).
