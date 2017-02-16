@@ -30,6 +30,50 @@ J = 0;
 Theta1_grad = zeros(size(Theta1));
 Theta2_grad = zeros(size(Theta2));
 
+one = ones(m,1);
+X = [one X];
+
+eye_matrix = eye(num_labels);
+y = eye_matrix(y,:);
+
+d2 = zeros(hidden_layer_size,1);
+d3 = zeros(num_labels,1);
+
+for i = 1:m
+    x_i = transpose(X(i,:));
+    total = 0;
+    for k = 1:num_labels
+        z_2 = Theta1 * x_i;
+        a_2 = sigmoid(z_2);
+        one = ones(1,1);
+        a_2 = [one;a_2];
+        z_3 = Theta2 * a_2;
+        h_theta = sigmoid(z_3);
+        total = total - y(i,k) * log(h_theta(k,1)) - (1- y(i,k))* log(1-h_theta(k,1));
+        d3(k) = h_theta(k,1) - y(i,k);
+    end
+    z_2 = [one;z_2];
+    d2 = (transpose(Theta2) * d3).*sigmoidGradient(z_2);
+    d2 = d2(2:end);
+    Theta1_grad = Theta1_grad + d2 * transpose(x_i);
+    Theta2_grad = Theta2_grad + d3 * transpose(a_2);
+    J = J+ total;
+end
+Theta1_grad = Theta1_grad ./m;
+Theta2_grad = Theta2_grad ./m;
+
+J = sum(J);
+J= J/m;
+
+C = Theta1.^2;
+C = C(:,2:end);%We do not regularize theta_0
+
+D = Theta2.^2;
+D = D(:,2:end);
+
+
+J = J + (lambda /(2*m) *( sum(C(:))+ sum(D(:))));
+
 % ====================== YOUR CODE HERE ======================
 % Instructions: You should complete the code by working through the
 %               following parts.
@@ -85,6 +129,19 @@ Theta2_grad = zeros(size(Theta2));
 % =========================================================================
 
 % Unroll gradients
+
+for i = 1 : size(Theta1_grad,1)
+    for j = 2 : size(Theta1_grad,2)
+        Theta1_grad(i,j) = Theta1_grad(i,j) + (lambda/m) * Theta1(i,j);
+    end
+end
+
+for i = 1 : size(Theta2_grad,1)
+    for j = 2 : size(Theta2_grad,2)
+        Theta2_grad(i,j) = Theta2_grad(i,j) + (lambda/m) * Theta2(i,j);
+    end
+end
+
 grad = [Theta1_grad(:) ; Theta2_grad(:)];
 
 
