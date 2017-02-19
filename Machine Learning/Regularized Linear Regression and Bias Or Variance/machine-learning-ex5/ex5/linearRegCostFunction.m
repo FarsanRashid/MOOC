@@ -10,6 +10,13 @@ m = length(y); % number of training examples
 
 % You need to return the following variables correctly 
 J = 0;
+
+J = sum(((X * theta)- y ).^2) / (2*m);
+n = size(theta,1);
+J = J + (lambda / (2*m)) * sum(theta(2:n).^2);
+
+
+
 grad = zeros(size(theta));
 
 % ====================== YOUR CODE HERE ======================
@@ -21,8 +28,20 @@ grad = zeros(size(theta));
 
 
 
+diff = (X * theta) - y;
 
+for j = 1:n
+    total = 0;
+    for i = 1:m
+        total = total + diff(i) * X(i,j);
+    end
+    total = total / m;
+    if j>1
+        total = total + (lambda / m) * theta(j);
+    end
+    grad(j) = total;
 
+end
 
 
 
