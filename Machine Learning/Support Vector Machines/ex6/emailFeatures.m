@@ -10,6 +10,12 @@ n = 1899;
 % You need to return the following variables correctly.
 x = zeros(n, 1);
 
+vocabList = getVocabList();
+for i = 1:size(word_indices,1)
+    indx = word_indices(i);
+    x(indx) = 1;
+end
+
 % ====================== YOUR CODE HERE ======================
 % Instructions: Fill in this function to return a feature vector for the
 %               given email (word_indices). To help make it easier to 
