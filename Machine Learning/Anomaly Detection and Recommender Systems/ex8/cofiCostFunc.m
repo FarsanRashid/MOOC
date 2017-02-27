@@ -27,8 +27,13 @@ diff2 = diff.^2;
 J = sum(diff2);
 J = sum(J)/2;
 
+J = J + (lambda/2)*sum(sum((Theta.^2),1))+ (lambda/2)*sum(sum((X.^2),1));
+
 X_grad = diff * Theta;
 Theta_grad = diff' * X;
+
+X_grad = X_grad + lambda*X;
+Theta_grad = Theta_grad + lambda*Theta;
 
 % ====================== YOUR CODE HERE ======================
 % Instructions: Compute the cost function and gradient for collaborative
