@@ -27,6 +27,9 @@ diff2 = diff.^2;
 J = sum(diff2);
 J = sum(J)/2;
 
+X_grad = diff * Theta;
+Theta_grad = diff' * X;
+
 % ====================== YOUR CODE HERE ======================
 % Instructions: Compute the cost function and gradient for collaborative
 %               filtering. Concretely, you should first implement the cost
