@@ -17,4 +17,9 @@ CHIP PC {
 
     PARTS:
     // Put your code here:
+	Mux16(a=regout,b=in,sel=load,out=x);
+	Xor(a=load,b=inc,out=f1);
+	And(a=f1,b=inc,out=ff);
+	ALU(x=x,y[0]=ff,y[1..15]=false,zx=reset,nx=false,zy=reset,ny=false,f=true,no=false,out=regin);
+	Register(in=regin,load=true,out=regout,out=out);
 }
