@@ -40,4 +40,13 @@ CHIP CPU {
 
     PARTS:
     // Put your code here:
+    MUX16(a=instruction,b=ALUout,sel = instruction[15],out=muxoneout);
+    NAND(a=instruction[5],b=instruction[15],out=notloada);
+    not(in=notloada,out=loada);
+    Aregister(in=muxoneout,load=loada,out=aout,out=adressm);
+    Dregister(in=ALUout,load=instruction[4],out=dout);
+    Mux16(a=Aout,b=inM,sel=instruction[12],out=mux2out);
+    ALU(a=dout,b=mux2out,sel=instruction[6..11],out=ALUout,out=outM);
+    And(a=instruction[15],b=instructoion[3],out=writeM);
+    
 }
