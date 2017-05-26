@@ -25,6 +25,7 @@
  * than to the address resulting from executing the current instruction. 
  */
 
+ 
 CHIP CPU {
 
     IN  inM[16],         // M value input  (M = contents of RAM[A])
@@ -37,16 +38,39 @@ CHIP CPU {
         writeM,          // Write to M? 
         addressM[15],    // Address in data memory (of M)
         pc[15];          // address of next instruction
-
+		
+		
     PARTS:
     // Put your code here:
-    MUX16(a=instruction,b=ALUout,sel = instruction[15],out=muxoneout);
-    NAND(a=instruction[5],b=instruction[15],out=notloada);
-    not(in=notloada,out=loada);
-    Aregister(in=muxoneout,load=loada,out=aout,out=adressm);
-    Dregister(in=ALUout,load=instruction[4],out=dout);
-    Mux16(a=Aout,b=inM,sel=instruction[12],out=mux2out);
-    ALU(a=dout,b=mux2out,sel=instruction[6..11],out=ALUout,out=outM);
-    And(a=instruction[15],b=instructoion[3],out=writeM);
-    
+    Mux16(a=instruction,b=ALUout,sel=instruction[15],out=Muxleftout);
+	Not(in=instruction[15],out=Noti);
+	Or(a=Noti,b=instruction[5],out=loadA);
+    ARegister(in=Muxleftout,load=loadA,out=Aout,out[0..14]=addressM);
+	And(a=instruction[15],b=instruction[4],out=loadD);
+    DRegister(in=ALUout,load=loadD,out=Dout);
+	And(a=instruction[15],b=instruction[12],out=selMuxright);
+    Mux16(a=Aout,b=inM,sel=selMuxright,out=Muxrightout);
+    ALU(x=Dout,y=Muxrightout,zx=instruction[11],nx=instruction[10],zy=instruction[9],ny=instruction[8],f=instruction[7],no=instruction[6],out=ALUout,out=outM,zr=zero,ng=neg);
+    And(a=instruction[15],b=instruction[3],out=writeM);
+	
+	Not(in=instruction[0],out=notj3);
+	Not(in=instruction[1],out=notj2);
+	Not(in=instruction[2],out=notj1);
+	Not(in=zero,out=notzero);
+	Not(in=neg,out=notneg);
+	
+	Or8Way(in[0]=zero,in[1]=neg,in[2]=instruction[2],in[3]=instruction[1],in[4]=notj3,out=a);
+	Or8Way(in[0]=notzero,in[1]=neg,in[2]=instruction[2],in[3]=notj2,in[4]=instruction[0],out=b);
+	Or8Way(in[1]=neg,in[2]=instruction[2],in[3]=notj2,in[4]=notj3,out=c);
+	Or8Way(in[0]=zero,in[1]=notneg,in[2]=notj1,in[3]=instruction[1],in[4]=instruction[0],out=d);
+	Or8Way(in[0]=zero,in[2]=notj1,in[3]=instruction[1],in[4]=notj3,out=e);
+	Or(a=zero,b=neg,out=notpositive);
+	Not(in=notpositive,out=positive);
+	Or8Way(in[0]=positive,in[2]=notj1,in[3]=notj2,in[4]=instruction[0],out=f);
+	Or8Way(in[2]=notj1,in[3]=notj2,in[4]=notj3,out=g);
+	Not16(in[0]=a,in[1]=b,in[2]=c,in[3]=d,in[4]=e,in[5]=f,in[6]=g,out[0..6]=allnotjumpzero);
+	Or8Way(in[0..6]=allnotjumpzero,in[7]=false,out=jump);
+	And(a=instruction[15],b=jump,out=cjump);
+	Not(in=cjump,out=incr);
+	PC(in=Aout,load=cjump,inc=incr,reset=reset,out[0..14]=pc[0..14]);
 }
